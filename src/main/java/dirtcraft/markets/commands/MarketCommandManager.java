@@ -23,6 +23,8 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
     private final CommandCallable marketCommand;
     private final CommandCallable marketClaimCommand;
     private final CommandCallable marketUnclaimCommand;
+    private final CommandCallable marketBlockCommand;
+    private final CommandCallable marketUnblockCommand;
 
     public MarketCommandManager(Markets plugin) {
         this.plugin = plugin;
@@ -37,6 +39,18 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
                 .description(Text.of("Unclaim market Command"))
                 .permission("dirtmarkets.commands.market.unclaim")
                 .executor(this::processMarketUnclaimCommand)
+                .build();
+
+        this.marketBlockCommand = CommandSpec.builder()
+                .description(Text.of("Unclaim market Command"))
+                .permission("dirtmarkets.commands.market.block")
+                .executor(this::processMarketBlockCommand)
+                .build();
+
+        this.marketUnblockCommand = CommandSpec.builder()
+                .description(Text.of("Unclaim market Command"))
+                .permission("dirtmarkets.commands.market.unblock")
+                .executor(this::processMarketUnblockCommand)
                 .build();
 
         this.marketCommand = CommandSpec.builder()
@@ -64,6 +78,14 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
     }
 
     private CommandResult processMarketUnclaimCommand(CommandSource source, CommandContext args) throws CommandException {
+        return CommandResult.success();
+    }
+
+    private CommandResult processMarketBlockCommand(CommandSource source, CommandContext args) throws CommandException{
+        return CommandResult.success();
+    }
+
+    private CommandResult processMarketUnblockCommand(CommandSource source, CommandContext args) throws CommandException{
         return CommandResult.success();
     }
 
