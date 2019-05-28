@@ -42,13 +42,13 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
                 .build();
 
         this.marketBlockCommand = CommandSpec.builder()
-                .description(Text.of("Unclaim market Command"))
+                .description(Text.of("Block market Command"))
                 .permission("dirtmarkets.commands.market.block")
                 .executor(this::processMarketBlockCommand)
                 .build();
 
         this.marketUnblockCommand = CommandSpec.builder()
-                .description(Text.of("Unclaim market Command"))
+                .description(Text.of("Unblock market Command"))
                 .permission("dirtmarkets.commands.market.unblock")
                 .executor(this::processMarketUnblockCommand)
                 .build();
