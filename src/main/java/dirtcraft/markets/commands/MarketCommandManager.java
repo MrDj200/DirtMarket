@@ -1,6 +1,7 @@
 package dirtcraft.markets.commands;
 
 import com.flowpowered.math.vector.Vector3i;
+import dirtcraft.markets.Database;
 import dirtcraft.markets.Markets;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandCallable;
@@ -21,6 +22,7 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
     private final Markets plugin;
 
     private final CommandCallable marketCommand;
+    private final CommandCallable marketEvilCommand;
     private final CommandCallable marketClaimCommand;
     private final CommandCallable marketUnclaimCommand;
     private final CommandCallable marketBlockCommand;
@@ -28,6 +30,12 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
 
     public MarketCommandManager(Markets plugin) {
         this.plugin = plugin;
+
+        this.marketEvilCommand = CommandSpec.builder()
+                .description(Text.of("DONT USE THIS"))
+                .permission("dirtmarkets.commands.market.evil")
+                .executor(this::processMarketEvilCommand)
+                .build();
 
         this.marketClaimCommand = CommandSpec.builder()
                 .description(Text.of("Claim market Command"))
@@ -70,6 +78,12 @@ public class MarketCommandManager implements Supplier<CommandCallable> {
         Player ply = (Player) source;
         Vector3i loc = ply.getLocation().getChunkPosition();
         source.sendMessage(Text.of("Information about " + loc + ""));
+        source.sendMessage(Text.of(Database.getInstance().testShit()));
+        return CommandResult.success();
+    }
+
+    private CommandResult processMarketEvilCommand(CommandSource source, CommandContext args) throws CommandException {
+        source.sendMessage(Text.of(Database.getInstance().evilShit(args.toString())));
         return CommandResult.success();
     }
 

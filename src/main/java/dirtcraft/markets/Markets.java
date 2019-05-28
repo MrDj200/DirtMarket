@@ -28,5 +28,6 @@ public class Markets {
 
     @Listener
     public void onServerStart(GameStartedServerEvent event) {
+        Database shit = Database.getInstance();
     }
 }
