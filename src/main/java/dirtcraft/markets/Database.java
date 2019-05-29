@@ -1,7 +1,6 @@
 package dirtcraft.markets;
 
 import com.flowpowered.math.vector.Vector3i;
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.service.sql.SqlService;
@@ -11,11 +10,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 public class Database {
 
-    @Inject
-    private Logger logger;
+    private Logger logger = Markets.getInstance().getLogger();
 
     private static Database INSTANCE;
 
@@ -29,54 +30,39 @@ public class Database {
     }
 
     public void connect(String url) {
-        String createString = "CREATE TABLE IF NOT EXISTS `market` (  `id`      int NOT NULL AUTO_INCREMENT,  `x`       int NOT NULL ,  `y`       int NOT NULL ,  `dim`     int NOT NULL ,  `plyUUID` char(36) NOT NULL ,  `claimed` datetime NOT NULL ,  PRIMARY KEY (`id`) );  CREATE TABLE IF NOT EXISTS `market_history` (  `plyUUID`   char(36) NOT NULL ,  `claimed`   datetime NOT NULL ,  `unclaimed` datetime NOT NULL ,  `fk_market_id`        int NOT NULL );  ALTER TABLE market_history ADD FOREIGN KEY (fk_market_id) REFERENCES market(id);";
+        String createString = "CREATE TABLE IF NOT EXISTS `market`( `id`       int NOT NULL AUTO_INCREMENT, `x`        int NOT NULL , `z`        int NOT NULL , `dim`      char(36) NOT NULL , `plyUUID`  char(36) NOT NULL , `claimed`  varchar(255) NOT NULL ,PRIMARY KEY (`id`));CREATE TABLE IF NOT EXISTS `market_history`( `plyUUID`          char(36) NOT NULL , `claimed`          varchar(255) NOT NULL , `unclaimed`        varchar(255) NOT NULL , `fk_market_id`     int NOT NULL);ALTER TABLE market_history ADD FOREIGN KEY (fk_market_id) REFERENCES market(id);";
         try {
             this.dataSource = this.sql.getDataSource(url);
             try (Connection c = this.dataSource.getConnection()){
                 c.prepareStatement(createString).execute();
             } catch (SQLException e) {
-                logger.error("An error occured!", e);
+                this.logger.error("An error occured!", e);
             }
         } catch (SQLException e) {
-            logger.error("An error occured!", e);
+            this.logger.error("An error occured!", e);
         }
-    }
-
-    public String evilShit(String sql){
-
-        return "nope";
-    }
-
-    public String testShit() {
-        String sql = "SELECT * from some_table";
-
-        try (Connection conn = this.dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet results = stmt.executeQuery()){
-
-            StringBuilder fuck = new StringBuilder("nothing to see over here. Move along");
-
-            int i = 0;
-            while (results.next()){
-                fuck
-                        .append(results.getMetaData().getColumnName(i++))
-                        .append("\n");
-            }
-
-            return fuck.toString();
-
-        }catch (SQLException e){
-            return "An error occured \n" + e.toString();
-        }
-
     }
 
     /**
      * Adds a market at the given pos for the given UUID
      *
-     * @param pos The position where the market should be added
      * @param plyUuid The UUID of the player
-     * @throws SQLException
+     * @param pos The position where the market should be added
+     * @param dimId The ID of the dimension the pos is in
      */
-    public void queryAddMarket(Vector3i pos, String plyUuid) throws SQLException{
+    public void queryAddMarket(UUID plyUuid, Vector3i pos, UUID dimId){
+        String sql = "INSERT INTO market (x, z, dim, plyUUID, claimed) VALUES (" +
+                "'" + pos.getX() + "'," +
+                "'" + pos.getZ()+ "'," +
+                "'" + dimId + "'," +
+                "'" + plyUuid + "'," +
+                "'" + System.currentTimeMillis() / 1000L + "');";
+
+        try (Connection conn = this.dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql);){
+            int results = stmt.executeUpdate();
+        }catch (SQLException e){
+            this.logger.error("An error occured: ", e);
+        }
 
     }
 
@@ -85,9 +71,8 @@ public class Database {
      *
      * @param pos The position that should be updated
      * @param plyUuid The UUID of the player
-     * @throws SQLException
      */
-    public void queryUpdateMarket(Vector3i pos, String plyUuid) throws SQLException{
+    public void queryUpdateMarket(UUID plyUuid, Vector3i pos, UUID dimId){
 
     }
 
@@ -98,23 +83,62 @@ public class Database {
      *          <code>Market Object</code> otherwise
      *
      * @param pos The position that should queried
-     * @throws SQLException
+     * @param dimId The ID of the dimension the pos is in
      */
-    public Market queryGetMarket(Vector3i pos) throws SQLException{
+    public Market queryGetMarket(Vector3i pos, UUID dimId){
 
-        return new Market(pos);
+        Market market = null;
+        String sql = "SELECT * FROM market WHERE x = '" + pos.getX() + "' AND z = '" + pos.getZ() + "' AND dim = '" + dimId + "';";
 
+        try (Connection conn = this.dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet results = stmt.executeQuery()){
+
+            while(results.next()){
+                market = new Market(
+                    results.getInt("id"),
+                    results.getInt("x"),
+                    results.getInt("z"),
+                    UUID.fromString(results.getString("dim")),
+                    UUID.fromString(results.getString("plyUUID")),
+                    results.getString("claimed"));
+            }
+
+        }catch (SQLException e){
+            this.logger.error("An error occured: ", e);
+        }
+
+        return market;
     }
 
     /**
      *
      * @param plyUuid The UUID of the player
-     * @return  <code>true</code> if an active market is registered for the given UUID
-     *          <code>false</code> otherwise
-     * @throws SQLException
+     * @return  number of active markets
      */
-    public boolean queryHasActiveMarket(String plyUuid) throws SQLException{
-        return false;
+    public List<Market> queryActiveMarkets(UUID plyUuid){
+
+        List<Market> returner = new ArrayList<Market>();
+
+        String sql = "SELECT * from market WHERE plyUUID='" + plyUuid.toString() + "'";
+
+        try (Connection conn = this.dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet results = stmt.executeQuery()){
+
+            while(results.next()){
+                Market tempMarket = new Market(
+                results.getInt("id"),
+                results.getInt("x"),
+                results.getInt("z"),
+                UUID.fromString(results.getString("dim")),
+                UUID.fromString(results.getString("plyUUID")),
+                results.getString("claimed"));
+
+                returner.add(tempMarket);
+            }
+
+        }catch (SQLException e){
+            this.logger.error("An error occured: ", e);
+        }
+
+        return returner;
     }
 
     public static Database getInstance() {

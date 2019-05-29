@@ -2,7 +2,9 @@ package dirtcraft.markets.commands;
 
 import com.flowpowered.math.vector.Vector3i;
 import dirtcraft.markets.Database;
+import dirtcraft.markets.Market;
 import dirtcraft.markets.Markets;
+import dirtcraft.markets.utils.Utils;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.CommandCallable;
 import org.spongepowered.api.command.CommandException;
@@ -12,95 +14,72 @@ import org.spongepowered.api.command.args.CommandContext;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.world.Location;
-import org.spongepowered.api.world.World;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class MarketCommandManager implements Supplier<CommandCallable> {
 
     private final Markets plugin;
+    private final MarketCommands cmds = new MarketCommands();
+    private Database db = Database.getInstance();
 
     private final CommandCallable marketCommand;
-    private final CommandCallable marketEvilCommand;
     private final CommandCallable marketClaimCommand;
     private final CommandCallable marketUnclaimCommand;
     private final CommandCallable marketBlockCommand;
     private final CommandCallable marketUnblockCommand;
+    private final CommandCallable marketListCommand;
 
     public MarketCommandManager(Markets plugin) {
         this.plugin = plugin;
 
-        this.marketEvilCommand = CommandSpec.builder()
-                .description(Text.of("DONT USE THIS"))
-                .permission("dirtmarkets.commands.market.evil")
-                .executor(this::processMarketEvilCommand)
-                .build();
-
         this.marketClaimCommand = CommandSpec.builder()
                 .description(Text.of("Claim market Command"))
                 .permission("dirtmarkets.commands.market.claim")
-                .executor(this::processMarketClaimCommand)
+                .executor(cmds::processMarketClaimCommand)
                 .build();
 
         this.marketUnclaimCommand = CommandSpec.builder()
                 .description(Text.of("Unclaim market Command"))
                 .permission("dirtmarkets.commands.market.unclaim")
-                .executor(this::processMarketUnclaimCommand)
+                .executor(cmds::processMarketUnclaimCommand)
                 .build();
 
         this.marketBlockCommand = CommandSpec.builder()
                 .description(Text.of("Block market Command"))
                 .permission("dirtmarkets.commands.market.block")
-                .executor(this::processMarketBlockCommand)
+                .executor(cmds::processMarketBlockCommand)
                 .build();
 
         this.marketUnblockCommand = CommandSpec.builder()
                 .description(Text.of("Unblock market Command"))
                 .permission("dirtmarkets.commands.market.unblock")
-                .executor(this::processMarketUnblockCommand)
+                .executor(cmds::processMarketUnblockCommand)
+                .build();
+
+        this.marketListCommand = CommandSpec.builder()
+                .description(Text.of("List your markets"))
+                .permission("dirtmarkets.commands.market.list")
+                .executor(cmds::processMarketListCommand)
                 .build();
 
         this.marketCommand = CommandSpec.builder()
                 .description(Text.of("Basic Market Command"))
                 .permission("dirtmarkets.commands.market.base")
-                .executor(this::processMarketCommand)
+                .executor(cmds::processMarketCommand)
                 .child(marketClaimCommand, "claim")
                 .child(marketUnclaimCommand, "unclaim")
+                .child(marketBlockCommand, "block")
+                .child(marketUnblockCommand, "unblock")
+                .child(marketListCommand, "list", "ls")
                 .build();
     }
 
     public void register() {
         Sponge.getCommandManager().register(this.plugin, this.get(), "market", "mrk");
-    }
-
-    private CommandResult processMarketCommand(CommandSource source, CommandContext args) throws CommandException {
-        Player ply = (Player) source;
-        Vector3i loc = ply.getLocation().getChunkPosition();
-        source.sendMessage(Text.of("Information about " + loc + ""));
-        source.sendMessage(Text.of(Database.getInstance().testShit()));
-        return CommandResult.success();
-    }
-
-    private CommandResult processMarketEvilCommand(CommandSource source, CommandContext args) throws CommandException {
-        source.sendMessage(Text.of(Database.getInstance().evilShit(args.toString())));
-        return CommandResult.success();
-    }
-
-    private CommandResult processMarketClaimCommand(CommandSource source, CommandContext args) throws CommandException {
-        return CommandResult.success();
-    }
-
-    private CommandResult processMarketUnclaimCommand(CommandSource source, CommandContext args) throws CommandException {
-        return CommandResult.success();
-    }
-
-    private CommandResult processMarketBlockCommand(CommandSource source, CommandContext args) throws CommandException{
-        return CommandResult.success();
-    }
-
-    private CommandResult processMarketUnblockCommand(CommandSource source, CommandContext args) throws CommandException{
-        return CommandResult.success();
     }
 
     @Override

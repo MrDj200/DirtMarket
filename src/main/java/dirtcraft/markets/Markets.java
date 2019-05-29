@@ -21,6 +21,18 @@ public class Markets {
     @Inject
     private Logger logger;
 
+    private static Markets instance;
+
+    { instance = this;}
+
+    public static Markets getInstance() {
+        return instance;
+    }
+
+    public Logger getLogger(){
+        return logger;
+    }
+
     @Listener
     public void onGameStarting (GameStartingServerEvent event){
         new MarketCommandManager(this).register();
@@ -30,4 +42,5 @@ public class Markets {
     public void onServerStart(GameStartedServerEvent event) {
         Database shit = Database.getInstance();
     }
+
 }
